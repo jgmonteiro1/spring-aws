@@ -27,6 +27,20 @@ bootJar {
     version = '1.0.0'
 }
 
+
+task unpack(type: Copy){
+    dependsOn bootJar
+    from(zipTree(tasks.bootJar.outputs.files.singleFile))
+    into("build/dependency")
+}
+
+    docker{
+        name "${project.group}/${bootJar.baseName}"
+        tags "${bootJar.version}"
+        copySpec.from(tasks.unpack.outputs).into("dependency")
+        buildArgs(['DEPENDENCY': "dependency"])
+    }
+
 repositories {
     mavenCentral()
     maven { url 'https://repo.spring.io/milestone' }
