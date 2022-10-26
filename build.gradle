@@ -1,19 +1,23 @@
 buildscript {
     ext {
-        springBootVersion = "3.0.0-SNAPSHOT"
+        springBootVersion = '3.0.0-SNAPSHOT'
     }
     repositories {
-        mavenLocal()
         mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
         classpath('gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.22.1')
     }
+
 }
+
 plugins {
     id 'org.springframework.boot' version '3.0.0-SNAPSHOT'
-    id 'io.spring.dependency-management' version '1.1.0'
+    id 'io.spring.dependency-management' version '1.0.10.RELEASE'
     id 'java'
     id 'com.palantir.docker' version '0.34.0'
 }
@@ -24,22 +28,22 @@ sourceCompatibility = '17'
 
 bootJar {
     baseName = 'spring-aws'
-    version = '1.0.0'
+    version =  '1.0.5'
+    mainClass = "com.jgmonteiro.springaws.SpringAwsApplication"
 }
 
-
-task unpack(type: Copy){
+task unpack(type: Copy) {
     dependsOn bootJar
     from(zipTree(tasks.bootJar.outputs.files.singleFile))
     into("build/dependency")
 }
+docker {
+    name "${project.group}/${bootJar.baseName}"
+    tags "${bootJar.version}"
+    copySpec.from(tasks.unpack.outputs).into("dependency")
+    buildArgs(['DEPENDENCY': "dependency"])
+}
 
-    docker{
-        name "${project.group}/${bootJar.baseName}"
-        tags "${bootJar.version}"
-        copySpec.from(tasks.unpack.outputs).into("dependency")
-        buildArgs(['DEPENDENCY': "dependency"])
-    }
 
 repositories {
     mavenCentral()
@@ -50,9 +54,10 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
-tasks.named('test') {
+test {
     useJUnitPlatform()
 }
